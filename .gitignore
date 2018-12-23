@@ -12,3 +12,4 @@ __pycache__
 univ.txt
 word_vec.pkl
 train.json
+sent1_train.pkl
