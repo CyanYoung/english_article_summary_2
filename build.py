@@ -3,11 +3,11 @@ import time
 import pickle as pk
 
 import torch
-from torch.nn import CrossEntropyLoss
+from torch.nn import NLLLoss
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 
-from nn_arch import S2S, Att, Ptr
+from nn_arch import Ptr
 
 from util import map_item
 
@@ -25,13 +25,9 @@ with open(path_embed, 'rb') as f:
 with open(path_word_ind, 'rb') as f:
     word_inds = pk.load(f)
 
-archs = {'s2s': S2S,
-         'att': Att,
-         'ptr': Ptr}
+archs = {'ptr': Ptr}
 
-paths = {'s2s': 'model/rnn_s2s.pkl',
-         'att': 'model/rnn_att.pkl',
-         'ptr': 'model/rnn_ptr.pkl'}
+paths = {'ptr': 'model/rnn_ptr.pkl'}
 
 
 def load_feat(path_feats):
@@ -114,7 +110,7 @@ def fit(name, max_epoch, embed_mat, path_feats, detail):
     embed_mat = torch.Tensor(embed_mat)
     arch = map_item(name, archs)
     model = arch(embed_mat).to(device)
-    loss_func = CrossEntropyLoss(ignore_index=0, reduction='sum')
+    loss_func = NLLLoss(ignore_index=0, reduction='sum')
     learn_rate, min_rate = 1e-3, 1e-5
     min_dev_loss = float('inf')
     trap_count, max_count = 0, 3
@@ -157,6 +153,4 @@ if __name__ == '__main__':
     path_feats['sent1_dev'] = 'feat/sent1_dev.pkl'
     path_feats['sent2_dev'] = 'feat/sent2_dev.pkl'
     path_feats['label_dev'] = 'feat/label_dev.pkl'
-    # fit('s2s', 50, embed_mat, path_feats, detail)
-    # fit('att', 50, embed_mat, path_feats, detail)
     fit('ptr', 50, embed_mat, path_feats, detail)
