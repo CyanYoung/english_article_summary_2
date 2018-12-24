@@ -12,7 +12,7 @@ from preprocess import clean
 
 from represent import sent2ind
 
-from nn_arch import S2SEncode, S2SDecode, AttEncode, AttDecode, AttPlot, PtrEncode, PtrDecode, PtrPlot
+from nn_arch import PtrEncode, PtrDecode, PtrPlot
 
 from util import map_item
 
@@ -73,7 +73,7 @@ def search(decode, state, cand):
     pad_bos = sent2ind([bos], word_inds, seq_len, 'post', keep_oov=True)
     word2 = torch.LongTensor([pad_bos]).to(device)
     probs = decode(word2, state)[0][0]
-    probs = F.softmax(probs, 0).numpy()
+    probs = F.softmax(probs, dim=0).numpy()
     max_probs, max_inds = check(probs, cand, keep_eos=False)
     text2s, log_sums = [bos] * cand, np.log(max_probs)
     fin_text2s, fin_logs = list(), list()
@@ -87,7 +87,7 @@ def search(decode, state, cand):
             sent2 = torch.LongTensor([pad_seq2]).to(device)
             step = min(count - 1, seq_len - 1)
             probs = decode(sent2, state)[0][step]
-            probs = F.softmax(probs, 0).numpy()
+            probs = F.softmax(probs, dim=0).numpy()
             max_probs, max_inds = check(probs, cand, keep_eos=True)
             max_logs = np.log(max_probs) + log_sums[i]
             log_mat.append(max_logs)
@@ -133,30 +133,18 @@ eos_ind = word_inds[eos]
 
 ind_words = ind2word(word_inds)
 
-archs = {'s2s_encode': S2SEncode,
-         's2s_decode': S2SDecode,
-         'att_encode': AttEncode,
-         'att_decode': AttDecode,
-         'att_plot': AttPlot,
-         'ptr_encode': PtrEncode,
+archs = {'ptr_encode': PtrEncode,
          'ptr_decode': PtrDecode,
          'ptr_plot': PtrPlot}
 
-paths = {'s2s': 'model/rnn_s2s.pkl',
-         'att': 'model/rnn_att.pkl',
-         'ptr': 'model/rnn_ptr.pkl'}
+paths = {'ptr': 'model/rnn_ptr.pkl'}
 
-models = {'s2s_encode': load_model('s2s', embed_mat, device, 'encode'),
-          's2s_decode': load_model('s2s', embed_mat, device, 'decode'),
-          'att_encode': load_model('att', embed_mat, device, 'encode'),
-          'att_decode': load_model('att', embed_mat, device, 'decode'),
-          'att_plot': load_plot('att', embed_mat, device),
-          'ptr_encode': load_model('ptr', embed_mat, device, 'encode'),
+models = {'ptr_encode': load_model('ptr', embed_mat, device, 'encode'),
           'ptr_decode': load_model('ptr', embed_mat, device, 'decode'),
           'ptr_plot': load_plot('ptr', embed_mat, device)}
 
 
-def plot_att(word1s, word2s, atts):
+def plot_ptr(word1s, word2s, atts):
     len1, len2 = len(word1s), len(word2s)
     atts = atts[:len2, -len1:]
     fig = plt.figure()
@@ -183,20 +171,18 @@ def predict(text, name):
         state = encode(sent1)
         decode.eval()
         pred = search(decode, state, cand=3)
-        if name == 'att' and __name__ == '__main__':
+        if __name__ == '__main__':
             text2 = ' '.join([bos, pred])
             word2s = text2.split()
             pad_seq2 = sent2ind(word2s, word_inds, seq_len, 'post', keep_oov=True)
             sent2 = torch.LongTensor([pad_seq2]).to(device)
             plot = map_item(name + '_plot', models)
             atts = plot(sent1, sent2)[0]
-            plot_att(word1s[:-1], word2s[1:] + eos, atts)
+            plot_ptr(word1s[:-1], word2s[1:] + [eos], atts)
         return pred
 
 
 if __name__ == '__main__':
     while True:
         text = input('text: ')
-        print('s2s: %s' % predict(text, 's2s'))
-        print('att: %s' % predict(text, 'att'))
         print('ptr: %s' % predict(text, 'ptr'))
