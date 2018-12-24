@@ -95,11 +95,17 @@ def pad(seq, seq_len, loc):
             return seq[-seq_len:]
 
 
-def align(sent_words, seq_len, path_sent, loc):
+def make_ptr(pad_seq, seq_len):
+    return pad_seq
+
+
+def align(sent_words, seq_len, path_sent, loc, ptr):
     word_inds = load(path_word_ind)
     pad_seqs = list()
     for words in sent_words:
         pad_seq = sent2ind(words, word_inds, seq_len, loc, keep_oov=True)
+        if ptr:
+            pad_seq = make_ptr(pad_seq, seq_len)
         pad_seqs.append(pad_seq)
     pad_seqs = np.array(pad_seqs)
     save(pad_seqs, path_sent)
@@ -122,9 +128,9 @@ def vectorize(paths, mode):
         save(text2s, paths['label'])
     else:
         sent2_words, label_words = shift(flag_text2_words)
-        align(sent1_words, seq_len1, paths['sent1'], loc='pre')
-        align(sent2_words, seq_len2, paths['sent2'], loc='post')
-        align(label_words, seq_len2, paths['label'], loc='post')
+        align(sent1_words, seq_len1, paths['sent1'], loc='pre', ptr=False)
+        align(sent2_words, seq_len2, paths['sent2'], loc='post', ptr=False)
+        align(label_words, seq_len2, paths['label'], loc='post', ptr=True)
 
 
 if __name__ == '__main__':
