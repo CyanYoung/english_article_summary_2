@@ -22,6 +22,7 @@ def save(path, pairs):
 
 def clean(text):
     text = re.sub(stop_word_re, '', text)
+    text = re.sub('([a-z])\.([A-Z])', r'\1. \2', text)
     words = nltk.word_tokenize(text)
     return ' '.join(words)
 
