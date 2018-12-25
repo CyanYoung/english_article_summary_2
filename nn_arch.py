@@ -31,7 +31,7 @@ class Ptr(nn.Module):
         a = F.softmax(d, dim=-1)
         c = torch.matmul(a, v)
         s2 = torch.cat((h2, c), dim=-1)
-        g = self.gate(s2)
+        g = torch.sigmoid(self.gate(s2))
         p2 = self.dla(s2)
         p = torch.cat((g * p2, (1 - g) * a), dim=-1)
         return torch.log(p)
