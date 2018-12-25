@@ -154,6 +154,11 @@ def vectorize(paths, mode):
 
 if __name__ == '__main__':
     paths = dict()
+    paths['data'] = 'data/train.json'
+    paths['sent1'] = 'feat/sent1_train.pkl'
+    paths['sent2'] = 'feat/sent2_train.pkl'
+    paths['label'] = 'feat/label_train.pkl'
+    vectorize(paths, 'train')
     paths['data'] = 'data/dev.json'
     paths['sent1'] = 'feat/sent1_dev.pkl'
     paths['sent2'] = 'feat/sent2_dev.pkl'
