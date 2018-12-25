@@ -17,7 +17,7 @@ class Ptr(nn.Module):
         self.gate = nn.Linear(400, 1)
         self.dla = nn.Sequential(nn.Dropout(0.2),
                                  nn.Linear(400, self.vocab_num),
-                                 nn.LogSoftmax(dim=-1))
+                                 nn.Softmax(dim=-1))
 
     def forward(self, x, y):
         x = self.embed(x)
@@ -30,11 +30,11 @@ class Ptr(nn.Module):
         d = torch.matmul(q, k.permute(0, 2, 1)) / scale
         a = F.softmax(d, dim=-1)
         c = torch.matmul(a, v)
-        p1 = torch.log(a)
         s2 = torch.cat((h2, c), dim=-1)
         g = self.gate(s2)
         p2 = self.dla(s2)
-        return torch.cat((g * p2, (1 - g) * p1), dim=-1)
+        p = torch.cat((g * p2, (1 - g) * a), dim=-1)
+        return torch.log(p)
 
 
 class PtrEncode(nn.Module):

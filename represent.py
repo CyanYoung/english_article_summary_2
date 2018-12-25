@@ -11,7 +11,7 @@ min_freq = 3
 max_vocab = 10000
 seq_len1, seq_len2 = 500, 30
 
-bos, eos = '*', '#'
+bos, eos = '<', '>'
 
 pad_ind, oov_ind = 0, 1
 
@@ -95,20 +95,39 @@ def pad(seq, seq_len, loc):
             return seq[-seq_len:]
 
 
-def make_ptr(pad_seq, seq_len):
-    return pad_seq
-
-
-def align(sent_words, seq_len, path_sent, loc, ptr):
+def align_sent(sent_words, seq_len, path_sent, loc):
     word_inds = load(path_word_ind)
     pad_seqs = list()
     for words in sent_words:
         pad_seq = sent2ind(words, word_inds, seq_len, loc, keep_oov=True)
-        if ptr:
-            pad_seq = make_ptr(pad_seq, seq_len)
         pad_seqs.append(pad_seq)
     pad_seqs = np.array(pad_seqs)
     save(pad_seqs, path_sent)
+
+
+def make_ptr(pad_seq, label, sent1, vocab_num):
+    bound1 = min(len(sent1), seq_len1) - 1
+    bound2 = min(len(label), seq_len2)
+    for i in range(bound2):
+        if pad_seq[i] == oov_ind:
+            for j in range(bound1):
+                if sent1[j] == label[i]:
+                    pad_seq[i] = vocab_num + j
+                    break
+    return pad_seq
+
+
+def align_label(label_words, sent1_words, seq_len, path_label, loc):
+    embed_mat = load(path_embed)
+    word_inds = load(path_word_ind)
+    vocab_num = len(embed_mat)
+    ptr_seqs = list()
+    for label, sent1 in zip(label_words, sent1_words):
+        pad_seq = sent2ind(label, word_inds, seq_len, loc, keep_oov=True)
+        ptr_seq = make_ptr(pad_seq, label, sent1, vocab_num)
+        ptr_seqs.append(ptr_seq)
+    ptr_seqs = np.array(ptr_seqs)
+    save(ptr_seqs, path_label)
 
 
 def vectorize(paths, mode):
@@ -128,18 +147,13 @@ def vectorize(paths, mode):
         save(text2s, paths['label'])
     else:
         sent2_words, label_words = shift(flag_text2_words)
-        align(sent1_words, seq_len1, paths['sent1'], loc='pre', ptr=False)
-        align(sent2_words, seq_len2, paths['sent2'], loc='post', ptr=False)
-        align(label_words, seq_len2, paths['label'], loc='post', ptr=True)
+        align_sent(sent1_words, seq_len1, paths['sent1'], loc='pre')
+        align_sent(sent2_words, seq_len2, paths['sent2'], loc='post')
+        align_label(label_words, sent1_words, seq_len2, paths['label'], loc='post')
 
 
 if __name__ == '__main__':
     paths = dict()
-    paths['data'] = 'data/train.json'
-    paths['sent1'] = 'feat/sent1_train.pkl'
-    paths['sent2'] = 'feat/sent2_train.pkl'
-    paths['label'] = 'feat/label_train.pkl'
-    vectorize(paths, 'train')
     paths['data'] = 'data/dev.json'
     paths['sent1'] = 'feat/sent1_dev.pkl'
     paths['sent2'] = 'feat/sent2_dev.pkl'
