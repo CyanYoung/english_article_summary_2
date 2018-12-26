@@ -15,9 +15,8 @@ class Ptr(nn.Module):
         self.decode = nn.GRU(self.embed_len, 200, batch_first=True)
         self.query, self.key, self.val = [nn.Linear(200, 200)] * 3
         self.gate = nn.Linear(400, 1)
-        self.dla = nn.Sequential(nn.Dropout(0.2),
-                                 nn.Linear(400, self.vocab_num),
-                                 nn.Softmax(dim=-1))
+        self.dl = nn.Sequential(nn.Dropout(0.2),
+                                nn.Linear(400, self.vocab_num))
 
     def forward(self, x, y):
         x = self.embed(x)
@@ -32,7 +31,7 @@ class Ptr(nn.Module):
         c = torch.matmul(a, v)
         s2 = torch.cat((h2, c), dim=-1)
         g = torch.sigmoid(self.gate(s2))
-        p2 = self.dla(s2)
+        p2 = F.softmax(self.dl(s2), dim=-1)
         p = torch.cat((g * p2, (1 - g) * a), dim=-1)
         return torch.log(p)
 
