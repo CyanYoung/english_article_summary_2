@@ -9,6 +9,7 @@ import torch.nn.functional as F
 class Ptr(nn.Module):
     def __init__(self, embed_mat):
         super(Ptr, self).__init__()
+        self.eps = 1e-10
         self.vocab_num, self.embed_len = embed_mat.size()
         self.embed = nn.Embedding(self.vocab_num, self.embed_len, _weight=embed_mat)
         self.encode = nn.GRU(self.embed_len, 200, batch_first=True)
@@ -31,8 +32,9 @@ class Ptr(nn.Module):
         c = torch.matmul(a, v)
         s2 = torch.cat((h2, c), dim=-1)
         g = torch.sigmoid(self.gate(s2))
-        p2 = F.softmax(self.dl(s2), dim=-1)
-        p = torch.cat((g * p2, (1 - g) * a), dim=-1)
+        p1 = (1 - g + self.eps) * a
+        p2 = (g + self.eps) * F.softmax(self.dl(s2), dim=-1)
+        p = torch.cat((p2, p1), dim=-1)
         return torch.log(p)
 
 
