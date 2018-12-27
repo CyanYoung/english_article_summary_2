@@ -48,7 +48,6 @@ class PtrEncode(nn.Module):
     def forward(self, x):
         x = self.embed(x)
         h1, h1_n = self.encode(x)
-        h1 = h1[:, :-1, :]
         return h1
 
 
