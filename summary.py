@@ -68,22 +68,29 @@ def check(probs, cand, keep_eos):
     return max_probs, max_inds
 
 
-def search(decode, state, cand):
-    pad_bos = sent2ind([bos], word_inds, seq_len, 'post', keep_oov=True)
+def switch(ind, text1, vocab_num):
+    if ind > vocab_num - 1:
+        return text1[ind - vocab_num]
+    else:
+        return ind_words[ind]
+
+
+def search(decode, state, text1, cand):
+    pad_bos = sent2ind([bos], word_inds, seq_len2, 'post', keep_oov=True)
     word2 = torch.LongTensor([pad_bos]).to(device)
     probs = decode(word2, state)[0][0].numpy()
     max_probs, max_inds = check(probs, cand, keep_eos=False)
     text2s, log_sums = [bos] * cand, np.log(max_probs)
     fin_text2s, fin_logs = list(), list()
-    next_words, count = [ind_words[ind] for ind in max_inds], 1
+    next_words, count = [switch(ind, text1, vocab_num) for ind in max_inds], 1
     while cand > 0:
         log_mat, ind_mat = list(), list()
         count = count + 1
         for i in range(cand):
             text2s[i] = ' '.join([text2s[i], next_words[i]])
-            pad_seq2 = sent2ind(text2s[i], word_inds, seq_len, 'post', keep_oov=True)
+            pad_seq2 = sent2ind(text2s[i], word_inds, seq_len2, 'post', keep_oov=True)
             sent2 = torch.LongTensor([pad_seq2]).to(device)
-            step = min(count - 1, seq_len - 1)
+            step = min(count - 1, seq_len2 - 1)
             probs = decode(sent2, state)[0][step].numpy()
             max_probs, max_inds = check(probs, cand, keep_eos=True)
             max_logs = np.log(max_probs) + log_sums[i]
@@ -94,7 +101,7 @@ def search(decode, state, cand):
         for log in max_logs:
             args = np.where(log_mat == log)
             sent_arg, ind_arg = int(args[0][0]), int(args[1][0])
-            next_word = ind_words[ind_mat[sent_arg][ind_arg]]
+            next_word = switch(ind_mat[sent_arg][ind_arg], text1, vocab_num)
             if next_word != eos and count < max_len:
                 next_words.append(next_word)
                 next_text2s.append(text2s[sent_arg])
@@ -110,7 +117,7 @@ def search(decode, state, cand):
 
 device = torch.device('cpu')
 
-seq_len = 30
+seq_len1, seq_len2 = 500, 30
 max_len = 30
 
 bos, eos = '<', '>'
@@ -123,6 +130,8 @@ with open(path_embed, 'rb') as f:
     embed_mat = pk.load(f)
 with open(path_word_ind, 'rb') as f:
     word_inds = pk.load(f)
+
+vocab_num = len(embed_mat)
 
 skip_inds = [pad_ind, oov_ind]
 
@@ -159,7 +168,7 @@ def predict(text, name):
     text1 = clean(text)
     text1 = ' '.join([text1, eos])
     word1s = text1.split()
-    pad_seq1 = sent2ind(word1s, word_inds, seq_len, 'pre', keep_oov=True)
+    pad_seq1 = sent2ind(word1s, word_inds, seq_len1, 'pre', keep_oov=True)
     sent1 = torch.LongTensor([pad_seq1]).to(device)
     encode = map_item(name + '_encode', models)
     decode = map_item(name + '_decode', models)
@@ -167,11 +176,11 @@ def predict(text, name):
         encode.eval()
         state = encode(sent1)
         decode.eval()
-        pred = search(decode, state, cand=3)
+        pred = search(decode, state, text1, cand=3)
         if __name__ == '__main__':
             text2 = ' '.join([bos, pred])
             word2s = text2.split()
-            pad_seq2 = sent2ind(word2s, word_inds, seq_len, 'post', keep_oov=True)
+            pad_seq2 = sent2ind(word2s, word_inds, seq_len2, 'post', keep_oov=True)
             sent2 = torch.LongTensor([pad_seq2]).to(device)
             plot = map_item(name + '_plot', models)
             atts = plot(sent1, sent2)[0]
