@@ -52,6 +52,7 @@ class PtrEncode(nn.Module):
 class PtrDecode(nn.Module):
     def __init__(self, embed_mat):
         super(PtrDecode, self).__init__()
+        self.eps = 1e-10
         self.vocab_num, self.embed_len = embed_mat.size()
         self.embed = nn.Embedding(self.vocab_num, self.embed_len)
         self.decode = nn.GRU(self.embed_len, 200, batch_first=True)
