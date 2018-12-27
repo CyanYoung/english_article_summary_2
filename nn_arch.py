@@ -33,8 +33,7 @@ class Ptr(nn.Module):
         g = torch.sigmoid(self.gate(s2))
         p1 = (1 - g + self.eps) * a
         p2 = (g + self.eps) * F.softmax(self.dl(s2), dim=-1)
-        p = torch.cat((p2, p1), dim=-1)
-        return torch.log(p)
+        return torch.cat((p2, p1), dim=-1)
 
 
 class PtrEncode(nn.Module):
@@ -58,9 +57,8 @@ class PtrDecode(nn.Module):
         self.decode = nn.GRU(self.embed_len, 200, batch_first=True)
         self.query, self.key, self.val = [nn.Linear(200, 200)] * 3
         self.gate = nn.Linear(400, 1)
-        self.dla = nn.Sequential(nn.Dropout(0.2),
-                                 nn.Linear(400, self.vocab_num),
-                                 nn.LogSoftmax(dim=-1))
+        self.dl = nn.Sequential(nn.Dropout(0.2),
+                                nn.Linear(400, self.vocab_num))
 
     def forward(self, y, h1):
         y = self.embed(y)
@@ -72,11 +70,11 @@ class PtrDecode(nn.Module):
         d = torch.matmul(q, k.permute(0, 2, 1)) / scale
         a = F.softmax(d, dim=-1)
         c = torch.matmul(a, v)
-        p1 = torch.log(a)
         s2 = torch.cat((h2, c), dim=-1)
-        g = self.gate(s2)
-        p2 = self.dla(s2)
-        return torch.cat((g * p2, (1 - g) * p1), dim=-1)
+        g = torch.sigmoid(self.gate(s2))
+        p1 = (1 - g + self.eps) * a
+        p2 = (g + self.eps) * F.softmax(self.dl(s2), dim=-1)
+        return torch.cat((p2, p1), dim=-1)
 
 
 class PtrPlot(nn.Module):
