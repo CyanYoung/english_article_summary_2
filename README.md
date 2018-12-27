@@ -10,13 +10,13 @@ add_flag() 添加控制符，shift() 对 text2 分别删去 bos、eos 得到 sen
 
 tokenize() 分别通过 sent1、flag_text2 建立词索引，构造 embed_mat
 
-align() 对训练数据 sent1 头部，sent2、label 尾部，填充或截取为定长序列
+align_sent() 填充或截取为定长序列，align_label() 再构造未录词到 text1 的指针
 
 #### 3.build
 
-通过 rnn 的 ptr 构建摘要模型，分别对解码器词特征 h2、编码器词特征 h1
+通过 rnn 的 ptr 构建摘要模型，连接语境向量 c 与解码器词特征 h2 得到 s2
 
-线性映射得到 q、k、v，使用点积注意力得到语境向量 c，h2_i 与 c_i 共同决定输出
+
 
 #### 4.summary
 
