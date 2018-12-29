@@ -23,5 +23,4 @@ def test(name, sent1s, labels):
 
 
 if __name__ == '__main__':
-    test('s2s', sent1s, labels)
-    test('att', sent1s, labels)
+    test('ptr', sent1s, labels)
