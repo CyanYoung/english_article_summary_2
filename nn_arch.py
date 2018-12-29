@@ -8,15 +8,15 @@ import torch.nn.functional as F
 class Ptr(nn.Module):
     def __init__(self, embed_mat):
         super(Ptr, self).__init__()
+        vocab_num, embed_len = embed_mat.size()
         self.eps = 1e-10
-        self.vocab_num, self.embed_len = embed_mat.size()
-        self.embed = nn.Embedding(self.vocab_num, self.embed_len, _weight=embed_mat)
-        self.encode = nn.GRU(self.embed_len, 200, batch_first=True)
-        self.decode = nn.GRU(self.embed_len, 200, batch_first=True)
+        self.embed = nn.Embedding(vocab_num, embed_len, _weight=embed_mat)
+        self.encode = nn.GRU(embed_len, 200, batch_first=True)
+        self.decode = nn.GRU(embed_len, 200, batch_first=True)
         self.query, self.key, self.val = [nn.Linear(200, 200)] * 3
         self.gate = nn.Linear(400, 1)
         self.dl = nn.Sequential(nn.Dropout(0.2),
-                                nn.Linear(400, self.vocab_num))
+                                nn.Linear(400, vocab_num))
 
     def forward(self, x, y):
         x = self.embed(x)
@@ -39,9 +39,9 @@ class Ptr(nn.Module):
 class PtrEncode(nn.Module):
     def __init__(self, embed_mat):
         super(PtrEncode, self).__init__()
-        self.vocab_num, self.embed_len = embed_mat.size()
-        self.embed = nn.Embedding(self.vocab_num, self.embed_len)
-        self.encode = nn.GRU(self.embed_len, 200, batch_first=True)
+        vocab_num, embed_len = embed_mat.size()
+        self.embed = nn.Embedding(vocab_num, embed_len)
+        self.encode = nn.GRU(embed_len, 200, batch_first=True)
 
     def forward(self, x):
         x = self.embed(x)
@@ -53,13 +53,13 @@ class PtrDecode(nn.Module):
     def __init__(self, embed_mat):
         super(PtrDecode, self).__init__()
         self.eps = 1e-10
-        self.vocab_num, self.embed_len = embed_mat.size()
-        self.embed = nn.Embedding(self.vocab_num, self.embed_len)
-        self.decode = nn.GRU(self.embed_len, 200, batch_first=True)
+        vocab_num, embed_len = embed_mat.size()
+        self.embed = nn.Embedding(vocab_num, embed_len)
+        self.decode = nn.GRU(embed_len, 200, batch_first=True)
         self.query, self.key, self.val = [nn.Linear(200, 200)] * 3
         self.gate = nn.Linear(400, 1)
         self.dl = nn.Sequential(nn.Dropout(0.2),
-                                nn.Linear(400, self.vocab_num))
+                                nn.Linear(400, vocab_num))
 
     def forward(self, y, h1):
         y = self.embed(y)
@@ -81,10 +81,10 @@ class PtrDecode(nn.Module):
 class PtrPlot(nn.Module):
     def __init__(self, embed_mat):
         super(PtrPlot, self).__init__()
-        self.vocab_num, self.embed_len = embed_mat.size()
-        self.embed = nn.Embedding(self.vocab_num, self.embed_len)
-        self.encode = nn.GRU(self.embed_len, 200, batch_first=True)
-        self.decode = nn.GRU(self.embed_len, 200, batch_first=True)
+        vocab_num, embed_len = embed_mat.size()
+        self.embed = nn.Embedding(vocab_num, embed_len)
+        self.encode = nn.GRU(embed_len, 200, batch_first=True)
+        self.decode = nn.GRU(embed_len, 200, batch_first=True)
         self.query, self.key, self.val = [nn.Linear(200, 200)] * 3
 
     def forward(self, x, y):
