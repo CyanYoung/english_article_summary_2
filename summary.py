@@ -11,9 +11,9 @@ from preprocess import clean
 
 from represent import sent2ind
 
-from nn_arch import PtrEncode, PtrDecode, PtrPlot
+from nn_arch import PtrEncode, PtrDecode, PtrCore
 
-from util import map_item
+from util import trunc, map_item
 
 
 plt.rcParams['axes.unicode_minus'] = False
@@ -27,23 +27,12 @@ def load_model(name, embed_mat, device, mode):
     arch = map_item('_'.join([name, mode]), archs)
     part = arch(embed_mat).to(device)
     part_dict = part.state_dict()
-    part_dict = {key: val for key, val in full_dict.items() if key in part_dict}
-    part_dict.update(part_dict)
+    for key, val in full_dict.items():
+        key = trunc(key, num=1)
+        if key in part_dict:
+            part_dict[key] = val
     part.load_state_dict(part_dict)
     return part
-
-
-def load_plot(name, embed_mat, device):
-    embed_mat = torch.Tensor(embed_mat)
-    model = torch.load(map_item(name, paths), map_location=device)
-    full_dict = model.state_dict()
-    arch = map_item(name + '_plot', archs)
-    plot = arch(embed_mat).to(device)
-    plot_dict = plot.state_dict()
-    plot_dict = {key: val for key, val in full_dict.items() if key in plot_dict}
-    plot_dict.update(plot_dict)
-    plot.load_state_dict(plot_dict)
-    return plot
 
 
 def ind2word(word_inds):
@@ -141,21 +130,21 @@ ind_words = ind2word(word_inds)
 
 archs = {'ptr_encode': PtrEncode,
          'ptr_decode': PtrDecode,
-         'ptr_plot': PtrPlot}
+         'ptr_core': PtrCore}
 
 paths = {'ptr': 'model/rnn_ptr.pkl'}
 
 models = {'ptr_encode': load_model('ptr', embed_mat, device, 'encode'),
           'ptr_decode': load_model('ptr', embed_mat, device, 'decode'),
-          'ptr_plot': load_plot('ptr', embed_mat, device)}
+          'ptr_core': load_model('ptr', embed_mat, device, 'core')}
 
 
-def plot_ptr(word1s, word2s, atts):
+def plot_ptr(word1s, word2s, ptrs):
     len1, len2 = len(word1s), len(word2s)
-    atts = atts[:len2, -len1:]
+    ptrs = ptrs[:len2, -len1:]
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    cax = ax.matshow(atts.numpy(), cmap='bone')
+    cax = ax.matshow(ptrs.numpy(), cmap='bone')
     fig.colorbar(cax)
     ax.set_xticklabels([''] + word1s, rotation='vertical')
     ax.set_yticklabels([''] + word2s)
@@ -182,9 +171,9 @@ def predict(text, name):
             word2s = text2.split()
             pad_seq2 = sent2ind(word2s, word_inds, seq_len2, 'post', keep_oov=True)
             sent2 = torch.LongTensor([pad_seq2]).to(device)
-            plot = map_item(name + '_plot', models)
-            atts = plot(sent1, sent2)[0]
-            plot_ptr(word1s[:-1], word2s[1:] + [eos], atts)
+            core = map_item(name + '_core', models)
+            ptrs = core(sent1, sent2)[0]
+            plot_ptr(word1s[:-1], word2s[1:] + [eos], ptrs)
         return pred
 
 
