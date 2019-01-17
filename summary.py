@@ -172,7 +172,7 @@ def predict(text, name):
             pad_seq2 = sent2ind(word2s, word_inds, seq_len2, 'post', keep_oov=True)
             sent2 = torch.LongTensor([pad_seq2]).to(device)
             core = map_item(name + '_core', models)
-            ptrs = core(sent1, sent2)[0]
+            ptrs = core(sent2, state)[0]
             plot_ptr(word1s[:-1], word2s[1:] + [eos], ptrs)
         return pred
 
