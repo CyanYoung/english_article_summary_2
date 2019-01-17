@@ -122,9 +122,8 @@ with open(path_word_ind, 'rb') as f:
 
 vocab_num = len(embed_mat)
 
-skip_inds = [pad_ind, oov_ind]
-
 eos_ind = word_inds[eos]
+skip_inds = [pad_ind, oov_ind]
 
 ind_words = ind2word(word_inds)
 
