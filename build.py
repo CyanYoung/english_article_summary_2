@@ -75,7 +75,7 @@ def get_metric(model, loss_func, triples):
     probs = model(sent1s, sent2s)
     probs = probs.view(-1, probs.size(-1))
     logs = torch.log(probs)
-    preds = torch.max(logs, 1)[1]
+    preds = torch.max(logs, dim=1)[1]
     loss = loss_func(logs, labels)
     acc = (preds == labels).sum().item()
     return loss, acc, num
