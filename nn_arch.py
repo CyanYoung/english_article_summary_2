@@ -20,7 +20,7 @@ class PtrEncode(nn.Module):
     def __init__(self, embed_mat):
         super(PtrEncode, self).__init__()
         vocab_num, embed_len = embed_mat.size()
-        self.embed = nn.Embedding(vocab_num, embed_len)
+        self.embed = nn.Embedding(vocab_num, embed_len, _weight=embed_mat)
         self.encode = nn.GRU(embed_len, 200, batch_first=True)
 
     def forward(self, x):
@@ -34,7 +34,7 @@ class PtrDecode(nn.Module):
         super(PtrDecode, self).__init__()
         self.eps = 1e-10
         vocab_num, embed_len = embed_mat.size()
-        self.embed = nn.Embedding(vocab_num, embed_len)
+        self.embed = nn.Embedding(vocab_num, embed_len, _weight=embed_mat)
         self.decode = nn.GRU(embed_len, 200, batch_first=True)
         self.qry = nn.Linear(200, 200)
         self.key = nn.Linear(200, 200)
@@ -63,7 +63,7 @@ class PtrCore(nn.Module):
     def __init__(self, embed_mat):
         super(PtrCore, self).__init__()
         vocab_num, embed_len = embed_mat.size()
-        self.embed = nn.Embedding(vocab_num, embed_len)
+        self.embed = nn.Embedding(vocab_num, embed_len, _weight=embed_mat)
         self.decode = nn.GRU(embed_len, 200, batch_first=True)
         self.qry = nn.Linear(200, 200)
         self.key = nn.Linear(200, 200)
